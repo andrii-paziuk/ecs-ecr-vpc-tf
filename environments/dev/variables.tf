@@ -43,3 +43,17 @@ variable "tags" {
   type        = map(string)
   default     = {}
 }
+
+variable "ecr_name" {
+  description = "Name of the ECR repository"
+  type        = string
+}
+
+variable "ecr_rw_arns" {
+  description = "List of ARNs with read/write access to the repository"
+  type        = list(string)
+}
+
+# variable "trusted_role_arns" {
+#   default = []
+# }
