@@ -37,28 +37,28 @@ module "security_groups" {
   tags              = local.tags
 }
 
-# module "alb" {
-#   source = "../../modules/alb"
+module "alb" {
+  source = "../../modules/alb"
 
-#   name            = var.alb_name
-#   vpc_id          = module.vpc.vpc_id
-#   subnet_ids      = module.vpc.public_subnets
-#   security_groups = module.security_groups.alb_sg_id
-#   tags            = local.tags
-# }
+  name            = var.alb_name
+  vpc_id          = module.vpc.vpc_id
+  subnet_ids      = module.vpc.public_subnets
+  security_groups = [module.security_groups.alb_sg_id] 
+  tags            = local.tags
+}
 
-# module "ecs_cluster" {
-#   source = "../../modules/ecs"
+module "ecs_cluster" {
+  source = "../../modules/ecs"
 
-#   cluster_name      = var.ecs_cluster_name
-#   name_prefix       = var.ecs_cluster_prefix
-#   image             = "${module.ecr.repository_url}:latest"
-#   cpu               = "256"
-#   memory            = "512"
-#   desired_count     = 1
-#   region            = var.region
-#   private_subnets   = module.vpc.private_subnets
-#   security_group_id = module.security_groups.ecs_sg_id
-#   target_group_arn  = module.alb.target_group_arn
-#   tags              = local.tags
-# }
+  cluster_name      = var.ecs_cluster_name
+  name_prefix       = var.ecs_cluster_prefix
+  image             = "${module.ecr.repository_url}:latest"
+  cpu               = "256"
+  memory            = "512"
+  desired_count     = 1
+  region            = var.region
+  private_subnets   = module.vpc.private_subnets
+  security_group_id = module.security_groups.ecs_sg_id
+  target_group_arn  = module.alb.target_group_arn
+  tags              = local.tags
+}

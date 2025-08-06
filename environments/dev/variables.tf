@@ -33,7 +33,7 @@ variable "region" {
 }
 
 variable "alb_name" {
-  default = "dev_alb"
+  default = "dev-ecs-alb"
 }
 
 variable "ecs_cluster_name" {
