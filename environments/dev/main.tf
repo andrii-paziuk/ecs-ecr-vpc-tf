@@ -1,60 +1,64 @@
+locals {
+  tags = {
+    Environment = "dev"
+    Project     = "ecs-project"
+  }
+}
+
 module "vpc" {
-  source  = "terraform-aws-modules/vpc/aws"
-  version = "5.1.0"
+  source = "../../modules/vpc"
 
-  name = var.vpc_name
-  cidr = var.vpc_cidr
+  name               = var.vpc_name
+  cidr               = var.vpc_cidr
+  azs                = var.azs
+  public_subnets     = var.public_subnets
+  private_subnets    = var.private_subnets
+  enable_nat_gateway = true
+  single_nat_gateway = true
 
-  azs             = var.vpc_azs
-  private_subnets = var.private_subnets
-  public_subnets  = var.public_subnets
-
-  enable_nat_gateway = var.enable_nat_gateway
-  single_nat_gateway = var.single_nat_gateway
-  enable_vpn_gateway = var.enable_vpn_gateway
-
-  tags = var.tags
+  tags = local.tags
 }
 
 module "ecr" {
-  source  = "terraform-aws-modules/ecr/aws"
-  version = "2.4.0"
+  source = "../../modules/ecr"
 
-  repository_name                   = var.ecr_name
-  repository_read_write_access_arns = var.ecr_rw_arns
-  repository_lifecycle_policy = jsonencode({
-    rules = [
-      {
-        rulePriority = 1,
-        description  = "Keep last 30 images",
-        selection = {
-          tagStatus     = "tagged",
-          tagPrefixList = ["v"],
-          countType     = "imageCountMoreThan",
-          countNumber   = 30
-        },
-        action = {
-          type = "expire"
-        }
-      }
-    ]
-  })
-
-  tags = var.tags
+  repository_name                   = var.repository_name
+  repository_read_write_access_arns = var.repository_read_write_access_arns
+  tags                              = local.tags
 }
 
-# module "ecr_role" {
-#   source = "terraform-aws-modules/iam/aws//modules/iam-assumable-role"
+module "security_groups" {
+  source = "../../modules/security_groups"
 
-#   trusted_role_arns = var.trusted_role_arns
+  vpc_id            = module.vpc.vpc_id
+  alb_ingress_cidrs = ["0.0.0.0/0"]
+  alb_port          = 80
+  ecs_port          = 80
+  tags              = local.tags
+}
 
-#   create_role = true
+# module "alb" {
+#   source = "../../modules/alb"
 
-#   role_name         = "ECRRole"
-#   role_requires_mfa = true
+#   name            = var.alb_name
+#   vpc_id          = module.vpc.vpc_id
+#   subnet_ids      = module.vpc.public_subnets
+#   security_groups = module.security_groups.alb_sg_id
+#   tags            = local.tags
+# }
 
-#   custom_role_policy_arns = [
-#     "arn:aws:iam::aws:policy/AmazonEC2ContainerRegistryPowerUser"
-#   ]
-#   number_of_custom_role_policy_arns = 1
+# module "ecs_cluster" {
+#   source = "../../modules/ecs"
+
+#   cluster_name      = var.ecs_cluster_name
+#   name_prefix       = var.ecs_cluster_prefix
+#   image             = "${module.ecr.repository_url}:latest"
+#   cpu               = "256"
+#   memory            = "512"
+#   desired_count     = 1
+#   region            = var.region
+#   private_subnets   = module.vpc.private_subnets
+#   security_group_id = module.security_groups.ecs_sg_id
+#   target_group_arn  = module.alb.target_group_arn
+#   tags              = local.tags
 # }
